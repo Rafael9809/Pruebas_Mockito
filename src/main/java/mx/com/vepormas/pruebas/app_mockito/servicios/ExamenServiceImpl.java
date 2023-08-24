@@ -29,4 +29,12 @@ public class ExamenServiceImpl implements ExamenService{
         }
         return preguntas!=null?  exOp.orElseThrow() : null;
     }
+
+    @Override
+    public Examen guardar(Examen examen) {
+        if(!examen.preguntas().isEmpty()){
+            pi.guardarVarias(examen.preguntas());
+        }
+        return exRep.guardar(examen);
+    }
 }

@@ -12,4 +12,8 @@ public class ExamenRepositoryImpl implements ExamenRepository{
     public List<Examen> findAll() {
         return Collections.emptyList();
     }
+
+    public Examen guardar(Examen examen){
+        return examen;
+    }
 }
