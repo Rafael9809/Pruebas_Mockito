@@ -11,12 +11,18 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.isNotNull;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -31,8 +37,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -218,5 +226,62 @@ public class ExamenServiceImplTest {
         assertEquals("Matematicas",examen.nombre());
     }
 
+    @Test
+    void testSpy(){
+        ExamenRepository exrep2 = spy(ExamenRepositoryImpl.class);
+        preguntasInterfaz pi2 = spy(preguntasInterfazImpl.class);
+        ExamenService exser2 = new ExamenServiceImpl(exrep2,pi2);
+        //when(pi2.findPreguntasExamenId(anyLong())).thenReturn(Datos.preguntas);
+        doReturn(Datos.preguntas).when(pi2).findPreguntasExamenId(anyLong());
+        
+        Examen examen = exser2.findExamenPorNombreConPreguntas("Matematicas");
+        assertEquals(1L,examen.id());
+        assertEquals("Matematicas",examen.nombre());
+        assertEquals(2, examen.preguntas().size());
+        assertTrue(examen.preguntas().contains("¿Como te llamas?"));
+    }
+
+    @Test
+    void testOrdenInvocaciones(){
+        when(exrep.findAll()).thenReturn(Datos.examenes);
+        exser.findExamenPorNombreConPreguntas("Matematicas");
+        exser.findExamenPorNombreConPreguntas("Mecanica");
+
+        InOrder inOrder = Mockito.inOrder(pi);
+        inOrder.verify(pi).findPreguntasExamenId(1L);
+        inOrder.verify(pi).findPreguntasExamenId(3L);
+    }
+
+    @Test
+    void testOrdenInvocaciones2(){
+        when(exrep.findAll()).thenReturn(Datos.examenes);
+        exser.findExamenPorNombreConPreguntas("Matematicas");
+        exser.findExamenPorNombreConPreguntas("Mecanica");
+
+        InOrder inOrder = Mockito.inOrder(exrep, pi);
+        inOrder.verify(exrep).findAll();
+        inOrder.verify(pi).findPreguntasExamenId(1L);
+        inOrder.verify(exrep).findAll();
+        inOrder.verify(pi).findPreguntasExamenId(3L);
+    }
+
+    @Test
+    void testNumeroInvocaciones(){
+        when(exrep.findAll()).thenReturn(Datos.examenes);
+        exser.findExamenPorNombreConPreguntas("Matematicas");
+
+        verify(pi, times(1)).findPreguntasExamenId(1L);
+        verify(pi, atLeast(1)).findPreguntasExamenId(1L); //atLeast(1) == atLeastOnce()
+        verify(pi, atMost(10)).findPreguntasExamenId(1L); //atMost(1) == atMostOnce()
+    }
+
+    @Test
+    void testNumeroInvocaciones2(){
+        when(exrep.findAll()).thenReturn(Collections.emptyList());
+        exser.findExamenPorNombreConPreguntas("Matematicas");
+
+        verify(pi, never()).findPreguntasExamenId(1L);
+        verifyNoInteractions(pi);
+    }
 
 }
